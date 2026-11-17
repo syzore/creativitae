@@ -1,0 +1,754 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Periodic Table Memory Game</title>
+    <style>
+      :root {
+        --bg-color: #121212;
+        --text-color: #ffffff;
+        --cell-bg: #2a2a2a;
+        --nonmetal: #4caf50;
+        --noble: #9c27b0;
+        --alkali: #f44336;
+        --alkaline: #ff9800;
+        --metalloid: #009688;
+        --halogen: #03a9f4;
+        --transition: #ffc107;
+        --post: #8bc34a;
+        --lanthanide: #e91e63;
+        --actinide: #9e9e9e;
+        --unknown: #607d8b;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        text-align: center;
+        margin: 0;
+        padding: 20px;
+      }
+
+      h1 {
+        margin-bottom: 5px;
+      }
+
+      .controls {
+        margin-bottom: 15px;
+      }
+
+      button {
+        padding: 10px 20px;
+        font-size: 1.1rem;
+        cursor: pointer;
+        border: none;
+        border-radius: 5px;
+        background: #2196f3;
+        color: white;
+        font-weight: bold;
+        transition: background 0.2s;
+      }
+
+      button:hover {
+        background: #1976d2;
+      }
+      button:disabled {
+        background: #555;
+        cursor: not-allowed;
+        color: #888;
+      }
+
+      .stats {
+        font-size: 1.2rem;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+      }
+
+      /* Periodic Table Grid */
+      .periodic-table {
+        display: grid;
+        grid-template-columns: repeat(18, 45px);
+        grid-template-rows: repeat(10, 50px);
+        gap: 4px;
+        justify-content: center;
+        margin-bottom: 20px;
+      }
+
+      .element {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        font-weight: bold;
+        color: #000;
+        box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+        transition: transform 0.1s;
+        position: relative;
+        cursor: pointer;
+      }
+
+      .element:hover {
+        transform: scale(1.1);
+        z-index: 10;
+      }
+
+      .element .atomic-number {
+        font-size: 0.6rem;
+        position: absolute;
+        top: 2px;
+        left: 3px;
+      }
+
+      .hidden-input {
+        width: 100%;
+        height: 100%;
+        border: 2px dashed #888;
+        background: #1e1e1e;
+        color: #fff;
+        text-align: center;
+        font-size: 1rem;
+        font-weight: bold;
+        text-transform: capitalize;
+        border-radius: 4px;
+        outline: none;
+        box-sizing: border-box;
+        cursor: text;
+      }
+
+      .hidden-input:focus {
+        border-color: #fff;
+        background: #333;
+      }
+      .hidden-input.error {
+        border-color: #f44336;
+        animation: shake 0.3s;
+      }
+
+      /* Element Colors */
+      .nonmetal {
+        background-color: var(--nonmetal);
+      }
+      .noble {
+        background-color: var(--noble);
+      }
+      .alkali {
+        background-color: var(--alkali);
+      }
+      .alkaline {
+        background-color: var(--alkaline);
+      }
+      .metalloid {
+        background-color: var(--metalloid);
+      }
+      .halogen {
+        background-color: var(--halogen);
+      }
+      .transition {
+        background-color: var(--transition);
+      }
+      .post {
+        background-color: var(--post);
+      }
+      .lanthanide {
+        background-color: var(--lanthanide);
+      }
+      .actinide {
+        background-color: var(--actinide);
+      }
+      .unknown {
+        background-color: var(--unknown);
+      }
+
+      /* Word Bank */
+      .word-bank-container {
+        max-width: 800px;
+        margin: 0 auto 30px auto;
+        padding: 15px;
+        background: #1e1e1e;
+        border-radius: 8px;
+        display: none; /* Hidden during study phase */
+      }
+
+      .word-bank-title {
+        margin: 0 0 10px 0;
+        font-size: 1rem;
+        color: #aaa;
+      }
+
+      .word-bank {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+      }
+
+      .word-bank span {
+        padding: 5px 12px;
+        background: #333;
+        border: 1px solid #555;
+        border-radius: 4px;
+        font-weight: bold;
+        transition: all 0.3s;
+      }
+
+      .word-bank span.used {
+        opacity: 0.3;
+        text-decoration: line-through;
+        background: #222;
+        border-color: #333;
+      }
+
+      /* Modals (Level Up & Element Info) */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        justify-content: center;
+        align-items: center;
+        z-index: 100;
+      }
+
+      .modal-content {
+        background: #222;
+        padding: 30px;
+        border-radius: 10px;
+        text-align: center;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        position: relative;
+      }
+
+      .close-btn {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #888;
+      }
+      .close-btn:hover {
+        color: #fff;
+      }
+
+      .element-badge {
+        width: 80px;
+        height: 90px;
+        margin: 0 auto 15px auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border-radius: 6px;
+        color: #000;
+        font-weight: bold;
+      }
+      .element-badge .sym {
+        font-size: 2rem;
+      }
+      .element-badge .num {
+        font-size: 0.9rem;
+      }
+
+      #level-up-modal h2 {
+        font-size: 2.5rem;
+        color: #4caf50;
+        margin: 0 0 10px 0;
+      }
+
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        25% {
+          transform: translateX(-3px);
+        }
+        75% {
+          transform: translateX(3px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Periodic Table Memory</h1>
+
+    <div class="controls">
+      <button id="start-btn" onclick="startGame()">Start Level 1</button>
+    </div>
+
+    <div class="stats">
+      <div>Level: <strong id="level-display">1</strong></div>
+      <div>Missing: <strong id="remaining-display">0</strong></div>
+    </div>
+
+    <div class="word-bank-container" id="word-bank-container">
+      <h4 class="word-bank-title">Missing Pieces Word Bank:</h4>
+      <div class="word-bank" id="word-bank"></div>
+    </div>
+
+    <div class="periodic-table" id="table"></div>
+
+    <!-- Level Up Modal -->
+    <div class="modal-overlay" id="level-up-modal">
+      <div class="modal-content">
+        <h2>Level Up!</h2>
+        <p>
+          Great job! Take a moment to study the board. The next level will hide
+          more elements.
+        </p>
+        <button onclick="prepareNextLevel()">Continue to Next Level</button>
+      </div>
+    </div>
+
+    <!-- Element Info Modal -->
+    <div class="modal-overlay" id="info-modal">
+      <div class="modal-content">
+        <span class="close-btn" onclick="closeInfoModal()">&times;</span>
+        <div id="info-badge" class="element-badge">
+          <span class="num" id="info-num"></span>
+          <span class="sym" id="info-sym"></span>
+        </div>
+        <h2 id="info-name" style="margin: 0 0 5px 0">Element Name</h2>
+        <p
+          id="info-cat"
+          style="color: #aaa; text-transform: capitalize; margin-top: 0"
+        ></p>
+      </div>
+    </div>
+
+    <script>
+      // Mapping Atomic Number to Full Name
+      const elementNames = {
+        1: "Hydrogen",
+        2: "Helium",
+        3: "Lithium",
+        4: "Beryllium",
+        5: "Boron",
+        6: "Carbon",
+        7: "Nitrogen",
+        8: "Oxygen",
+        9: "Fluorine",
+        10: "Neon",
+        11: "Sodium",
+        12: "Magnesium",
+        13: "Aluminum",
+        14: "Silicon",
+        15: "Phosphorus",
+        16: "Sulfur",
+        17: "Chlorine",
+        18: "Argon",
+        19: "Potassium",
+        20: "Calcium",
+        21: "Scandium",
+        22: "Titanium",
+        23: "Vanadium",
+        24: "Chromium",
+        25: "Manganese",
+        26: "Iron",
+        27: "Cobalt",
+        28: "Nickel",
+        29: "Copper",
+        30: "Zinc",
+        31: "Gallium",
+        32: "Germanium",
+        33: "Arsenic",
+        34: "Selenium",
+        35: "Bromine",
+        36: "Krypton",
+        37: "Rubidium",
+        38: "Strontium",
+        39: "Yttrium",
+        40: "Zirconium",
+        41: "Niobium",
+        42: "Molybdenum",
+        43: "Technetium",
+        44: "Ruthenium",
+        45: "Rhodium",
+        46: "Palladium",
+        47: "Silver",
+        48: "Cadmium",
+        49: "Indium",
+        50: "Tin",
+        51: "Antimony",
+        52: "Tellurium",
+        53: "Iodine",
+        54: "Xenon",
+        55: "Cesium",
+        56: "Barium",
+        57: "Lanthanum",
+        58: "Cerium",
+        59: "Praseodymium",
+        60: "Neodymium",
+        61: "Promethium",
+        62: "Samarium",
+        63: "Europium",
+        64: "Gadolinium",
+        65: "Terbium",
+        66: "Dysprosium",
+        67: "Holmium",
+        68: "Erbium",
+        69: "Thulium",
+        70: "Ytterbium",
+        71: "Lutetium",
+        72: "Hafnium",
+        73: "Tantalum",
+        74: "Tungsten",
+        75: "Rhenium",
+        76: "Osmium",
+        77: "Iridium",
+        78: "Platinum",
+        79: "Gold",
+        80: "Mercury",
+        81: "Thallium",
+        82: "Lead",
+        83: "Bismuth",
+        84: "Polonium",
+        85: "Astatine",
+        86: "Radon",
+        87: "Francium",
+        88: "Radium",
+        89: "Actinium",
+        90: "Thorium",
+        91: "Protactinium",
+        92: "Uranium",
+        93: "Neptunium",
+        94: "Plutonium",
+        95: "Americium",
+        96: "Curium",
+        97: "Berkelium",
+        98: "Californium",
+        99: "Einsteinium",
+        100: "Fermium",
+        101: "Mendelevium",
+        102: "Nobelium",
+        103: "Lawrencium",
+        104: "Rutherfordium",
+        105: "Dubnium",
+        106: "Seaborgium",
+        107: "Bohrium",
+        108: "Hassium",
+        109: "Meitnerium",
+        110: "Darmstadtium",
+        111: "Roentgenium",
+        112: "Copernicium",
+        113: "Nihonium",
+        114: "Flerovium",
+        115: "Moscovium",
+        116: "Livermorium",
+        117: "Tennessine",
+        118: "Oganesson",
+      };
+
+      // Compact dataset: [Atomic Num, Symbol, Column(1-18), Row(1-10), Category]
+      const elementsData = [
+        [1, "H", 1, 1, "nonmetal"],
+        [2, "He", 18, 1, "noble"],
+        [3, "Li", 1, 2, "alkali"],
+        [4, "Be", 2, 2, "alkaline"],
+        [5, "B", 13, 2, "metalloid"],
+        [6, "C", 14, 2, "nonmetal"],
+        [7, "N", 15, 2, "nonmetal"],
+        [8, "O", 16, 2, "nonmetal"],
+        [9, "F", 17, 2, "halogen"],
+        [10, "Ne", 18, 2, "noble"],
+        [11, "Na", 1, 3, "alkali"],
+        [12, "Mg", 2, 3, "alkaline"],
+        [13, "Al", 13, 3, "post"],
+        [14, "Si", 14, 3, "metalloid"],
+        [15, "P", 15, 3, "nonmetal"],
+        [16, "S", 16, 3, "nonmetal"],
+        [17, "Cl", 17, 3, "halogen"],
+        [18, "Ar", 18, 3, "noble"],
+        [19, "K", 1, 4, "alkali"],
+        [20, "Ca", 2, 4, "alkaline"],
+        [21, "Sc", 3, 4, "transition"],
+        [22, "Ti", 4, 4, "transition"],
+        [23, "V", 5, 4, "transition"],
+        [24, "Cr", 6, 4, "transition"],
+        [25, "Mn", 7, 4, "transition"],
+        [26, "Fe", 8, 4, "transition"],
+        [27, "Co", 9, 4, "transition"],
+        [28, "Ni", 10, 4, "transition"],
+        [29, "Cu", 11, 4, "transition"],
+        [30, "Zn", 12, 4, "transition"],
+        [31, "Ga", 13, 4, "post"],
+        [32, "Ge", 14, 4, "metalloid"],
+        [33, "As", 15, 4, "metalloid"],
+        [34, "Se", 16, 4, "nonmetal"],
+        [35, "Br", 17, 4, "halogen"],
+        [36, "Kr", 18, 4, "noble"],
+        [37, "Rb", 1, 5, "alkali"],
+        [38, "Sr", 2, 5, "alkaline"],
+        [39, "Y", 3, 5, "transition"],
+        [40, "Zr", 4, 5, "transition"],
+        [41, "Nb", 5, 5, "transition"],
+        [42, "Mo", 6, 5, "transition"],
+        [43, "Tc", 7, 5, "transition"],
+        [44, "Ru", 8, 5, "transition"],
+        [45, "Rh", 9, 5, "transition"],
+        [46, "Pd", 10, 5, "transition"],
+        [47, "Ag", 11, 5, "transition"],
+        [48, "Cd", 12, 5, "transition"],
+        [49, "In", 13, 5, "post"],
+        [50, "Sn", 14, 5, "post"],
+        [51, "Sb", 15, 5, "metalloid"],
+        [52, "Te", 16, 5, "metalloid"],
+        [53, "I", 17, 5, "halogen"],
+        [54, "Xe", 18, 5, "noble"],
+        [55, "Cs", 1, 6, "alkali"],
+        [56, "Ba", 2, 6, "alkaline"],
+        [57, "La", 4, 9, "lanthanide"],
+        [58, "Ce", 5, 9, "lanthanide"],
+        [59, "Pr", 6, 9, "lanthanide"],
+        [60, "Nd", 7, 9, "lanthanide"],
+        [61, "Pm", 8, 9, "lanthanide"],
+        [62, "Sm", 9, 9, "lanthanide"],
+        [63, "Eu", 10, 9, "lanthanide"],
+        [64, "Gd", 11, 9, "lanthanide"],
+        [65, "Tb", 12, 9, "lanthanide"],
+        [66, "Dy", 13, 9, "lanthanide"],
+        [67, "Ho", 14, 9, "lanthanide"],
+        [68, "Er", 15, 9, "lanthanide"],
+        [69, "Tm", 16, 9, "lanthanide"],
+        [70, "Yb", 17, 9, "lanthanide"],
+        [71, "Lu", 18, 9, "lanthanide"],
+        [72, "Hf", 4, 6, "transition"],
+        [73, "Ta", 5, 6, "transition"],
+        [74, "W", 6, 6, "transition"],
+        [75, "Re", 7, 6, "transition"],
+        [76, "Os", 8, 6, "transition"],
+        [77, "Ir", 9, 6, "transition"],
+        [78, "Pt", 10, 6, "transition"],
+        [79, "Au", 11, 6, "transition"],
+        [80, "Hg", 12, 6, "transition"],
+        [81, "Tl", 13, 6, "post"],
+        [82, "Pb", 14, 6, "post"],
+        [83, "Bi", 15, 6, "post"],
+        [84, "Po", 16, 6, "post"],
+        [85, "At", 17, 6, "halogen"],
+        [86, "Rn", 18, 6, "noble"],
+        [87, "Fr", 1, 7, "alkali"],
+        [88, "Ra", 2, 7, "alkaline"],
+        [89, "Ac", 4, 10, "actinide"],
+        [90, "Th", 5, 10, "actinide"],
+        [91, "Pa", 6, 10, "actinide"],
+        [92, "U", 7, 10, "actinide"],
+        [93, "Np", 8, 10, "actinide"],
+        [94, "Pu", 9, 10, "actinide"],
+        [95, "Am", 10, 10, "actinide"],
+        [96, "Cm", 11, 10, "actinide"],
+        [97, "Bk", 12, 10, "actinide"],
+        [98, "Cf", 13, 10, "actinide"],
+        [99, "Es", 14, 10, "actinide"],
+        [100, "Fm", 15, 10, "actinide"],
+        [101, "Md", 16, 10, "actinide"],
+        [102, "No", 17, 10, "actinide"],
+        [103, "Lr", 18, 10, "actinide"],
+        [104, "Rf", 4, 7, "transition"],
+        [105, "Db", 5, 7, "transition"],
+        [106, "Sg", 6, 7, "transition"],
+        [107, "Bh", 7, 7, "transition"],
+        [108, "Hs", 8, 7, "transition"],
+        [109, "Mt", 9, 7, "unknown"],
+        [110, "Ds", 10, 7, "unknown"],
+        [111, "Rg", 11, 7, "unknown"],
+        [112, "Cn", 12, 7, "post"],
+        [113, "Nh", 13, 7, "unknown"],
+        [114, "Fl", 14, 7, "unknown"],
+        [115, "Mc", 15, 7, "unknown"],
+        [116, "Lv", 16, 7, "unknown"],
+        [117, "Ts", 17, 7, "unknown"],
+        [118, "Og", 18, 7, "unknown"],
+      ];
+
+      let currentLevel = 1;
+      let remainingElements = 0;
+      let hiddenIndices = new Set();
+      let gameState = "study"; // 'study' or 'playing'
+
+      const tableContainer = document.getElementById("table");
+      const levelDisplay = document.getElementById("level-display");
+      const remainingDisplay = document.getElementById("remaining-display");
+      const startBtn = document.getElementById("start-btn");
+      const wordBankContainer = document.getElementById("word-bank-container");
+      const wordBank = document.getElementById("word-bank");
+
+      const levelUpModal = document.getElementById("level-up-modal");
+      const infoModal = document.getElementById("info-modal");
+
+      function initStudyPhase() {
+        gameState = "study";
+        tableContainer.innerHTML = "";
+        levelDisplay.innerText = currentLevel;
+        remainingDisplay.innerText = "0";
+        wordBankContainer.style.display = "none";
+
+        startBtn.innerText = `Start Level ${currentLevel}`;
+        startBtn.disabled = false;
+
+        // Determine what WILL be hidden
+        let elementsToHideCount = Math.min(
+          3 + (currentLevel - 1) * 3,
+          elementsData.length,
+        );
+        hiddenIndices.clear();
+        while (hiddenIndices.size < elementsToHideCount) {
+          hiddenIndices.add(Math.floor(Math.random() * elementsData.length));
+        }
+
+        // Draw full board for studying
+        elementsData.forEach((el, index) => {
+          const [num, symbol, col, row, category] = el;
+          const cell = document.createElement("div");
+          cell.className = `element ${category}`;
+          cell.style.gridColumn = col;
+          cell.style.gridRow = row;
+          cell.innerHTML = `<span class="atomic-number">${num}</span><span class="symbol">${symbol}</span>`;
+
+          // Add click listener for info popup
+          cell.addEventListener("click", () =>
+            openInfoModal(num, symbol, category),
+          );
+
+          tableContainer.appendChild(cell);
+        });
+      }
+
+      function startGame() {
+        gameState = "playing";
+        startBtn.disabled = true;
+        startBtn.innerText = "Playing...";
+
+        remainingElements = hiddenIndices.size;
+        remainingDisplay.innerText = remainingElements;
+
+        wordBankContainer.style.display = "block";
+        wordBank.innerHTML = "";
+        tableContainer.innerHTML = "";
+
+        let missingSymbols = [];
+
+        // Draw game board
+        elementsData.forEach((el, index) => {
+          const [num, symbol, col, row, category] = el;
+          const isHidden = hiddenIndices.has(index);
+          const cell = document.createElement("div");
+          cell.style.gridColumn = col;
+          cell.style.gridRow = row;
+
+          if (isHidden) {
+            missingSymbols.push(symbol);
+            const input = document.createElement("input");
+            input.type = "text";
+            input.maxLength = 2;
+            input.className = "hidden-input";
+            input.dataset.symbol = symbol;
+            input.dataset.category = category;
+            input.dataset.num = num;
+
+            input.addEventListener("input", (e) => checkAnswer(e.target, cell));
+            cell.appendChild(input);
+          } else {
+            cell.className = `element ${category}`;
+            cell.innerHTML = `<span class="atomic-number">${num}</span><span class="symbol">${symbol}</span>`;
+            cell.addEventListener("click", () =>
+              openInfoModal(num, symbol, category),
+            );
+          }
+          tableContainer.appendChild(cell);
+        });
+
+        // Populate Word Bank (Shuffled)
+        missingSymbols
+          .sort(() => Math.random() - 0.5)
+          .forEach((sym) => {
+            const span = document.createElement("span");
+            span.innerText = sym;
+            span.id = `bank-${sym}`;
+            wordBank.appendChild(span);
+          });
+      }
+
+      function checkAnswer(inputElement, parentCell) {
+        const userAnswer = inputElement.value.trim().toLowerCase();
+        const correctAnswer = inputElement.dataset.symbol.toLowerCase();
+
+        if (userAnswer === correctAnswer) {
+          const num = inputElement.dataset.num;
+          const symbol = inputElement.dataset.symbol;
+          const category = inputElement.dataset.category;
+
+          // Transform input back to element block
+          parentCell.innerHTML = `<span class="atomic-number">${num}</span><span class="symbol">${symbol}</span>`;
+          parentCell.className = `element ${category}`;
+          parentCell.addEventListener("click", () =>
+            openInfoModal(num, symbol, category),
+          );
+
+          // Cross off word bank
+          const bankItem = document.getElementById(`bank-${symbol}`);
+          if (bankItem) bankItem.classList.add("used");
+
+          remainingElements--;
+          remainingDisplay.innerText = remainingElements;
+
+          if (remainingElements === 0) {
+            setTimeout(() => (levelUpModal.style.display = "flex"), 400);
+          }
+        } else if (
+          userAnswer.length >= correctAnswer.length &&
+          userAnswer !== correctAnswer
+        ) {
+          inputElement.classList.add("error");
+          setTimeout(() => inputElement.classList.remove("error"), 300);
+        }
+      }
+
+      function prepareNextLevel() {
+        levelUpModal.style.display = "none";
+        currentLevel++;
+        initStudyPhase();
+      }
+
+      // Element Info Modal Functions
+      function openInfoModal(num, symbol, category) {
+        const badge = document.getElementById("info-badge");
+        document.getElementById("info-num").innerText = num;
+        document.getElementById("info-sym").innerText = symbol;
+        document.getElementById("info-name").innerText =
+          elementNames[num] || "Unknown";
+        document.getElementById("info-cat").innerText = category.replace(
+          "-",
+          " ",
+        );
+
+        // Apply category color to badge
+        badge.className = `element-badge ${category}`;
+        infoModal.style.display = "flex";
+      }
+
+      function closeInfoModal() {
+        infoModal.style.display = "none";
+      }
+
+      // Close modal if clicking outside the card
+      window.onclick = function (event) {
+        if (event.target === infoModal) closeInfoModal();
+      };
+
+      // Initialize first level study phase
+      initStudyPhase();
+    </script>
+  </body>
+</html>

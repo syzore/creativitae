@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Knodes Logo Animation</title>
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #0f172a;
+        font-family: Inter, system-ui, sans-serif;
+      }
+
+      .logo {
+        position: relative;
+        font-size: clamp(4rem, 12vw, 8rem);
+        font-weight: 900;
+        color: white;
+        cursor: pointer;
+        user-select: none;
+        min-width: 15ch;
+        text-align: center;
+      }
+
+      .text {
+        display: inline-block;
+        min-width: 15ch;
+      }
+
+      .char {
+        display: inline-block;
+      }
+
+      .added {
+        color: #60a5fa;
+      }
+
+      .space {
+        width: 0.35em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="logo">
+      <span id="text" class="text">Knodes</span>
+    </div>
+
+    <script>
+      const steps = [
+        "Knodes",
+        "Kno des",
+        "Know odes",
+        "Knowl nodes",
+        "Knowle nodes",
+        "Knowled nodes",
+        "Knowledge nodes",
+      ];
+
+      const text = document.getElementById("text");
+
+      let timer;
+      let hovering = false;
+      let index = 0;
+
+      function render(str) {
+        const chars = [...str]
+          .map((c) => {
+            const value = c === " " ? "&nbsp;" : c;
+
+            return `<span class="char">${value}</span>`;
+          })
+          .join("");
+
+        text.innerHTML = chars;
+      }
+
+      function animateForward() {
+        clearInterval(timer);
+
+        timer = setInterval(() => {
+          if (!hovering) return;
+
+          index++;
+
+          if (index >= steps.length) {
+            index = steps.length - 1;
+            clearInterval(timer);
+          }
+
+          render(steps[index]);
+        }, 70);
+      }
+
+      function animateBackward() {
+        clearInterval(timer);
+
+        timer = setInterval(() => {
+          if (hovering) return;
+
+          index--;
+
+          if (index <= 0) {
+            index = 0;
+            clearInterval(timer);
+          }
+
+          render(steps[index]);
+        }, 70);
+      }
+
+      render(steps[0]);
+
+      document.querySelector(".logo").addEventListener("mouseenter", () => {
+        hovering = true;
+        animateForward();
+      });
+
+      document.querySelector(".logo").addEventListener("mouseleave", () => {
+        hovering = false;
+        animateBackward();
+      });
+    </script>
+  </body>
+</html>
